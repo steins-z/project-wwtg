@@ -66,10 +66,17 @@ async function sendChatMessage(message) {
     };
   }
 
-  return request('/chat/message', {
+  const res = await request('/chat/message', {
     method: 'POST',
     data: { message, session_id: app.globalData.sessionId },
   });
+
+  // Persist session_id from backend response for conversation continuity
+  if (res && res.session_id) {
+    app.globalData.sessionId = res.session_id;
+  }
+
+  return res;
 }
 
 /**

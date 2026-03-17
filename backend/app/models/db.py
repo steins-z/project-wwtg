@@ -1,7 +1,7 @@
 """SQLAlchemy ORM models matching the DB schema in technical design."""
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import (
     Column,
@@ -26,8 +26,8 @@ class User(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     wx_openid = Column(String(64), unique=True, nullable=False)
     wx_nickname = Column(String(64))
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     sessions = relationship("Session", back_populates="user")
 
@@ -40,8 +40,8 @@ class Session(Base):
     city = Column(String(32))
     context = Column(JSONB)
     state = Column(String(32), default="init")
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     user = relationship("User", back_populates="sessions")
     messages = relationship("Message", back_populates="session")
@@ -60,7 +60,7 @@ class Message(Base):
     role = Column(String(16), nullable=False)
     content = Column(Text, nullable=False)
     metadata_ = Column("metadata", JSONB)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     session = relationship("Session", back_populates="messages")
 
@@ -74,7 +74,7 @@ class Plan(Base):
     description = Column(Text)
     card_data = Column(JSONB, nullable=False)
     status = Column(String(16), default="presented")
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     session = relationship("Session", back_populates="plans")
 
@@ -88,7 +88,7 @@ class PoiCache(Base):
     poi_data = Column(JSONB, nullable=False)
     source_url = Column(String(512))
     source_likes = Column(Integer)
-    fetched_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    fetched_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     expires_at = Column(DateTime(timezone=True), nullable=False)
 
 
@@ -100,7 +100,7 @@ class Event(Base):
     session_id = Column(UUID(as_uuid=True), ForeignKey("sessions.id"))
     event_type = Column(String(64), nullable=False)
     event_data = Column(JSONB)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     __table_args__ = (
         Index("idx_events_type", "event_type", created_at.desc()),
