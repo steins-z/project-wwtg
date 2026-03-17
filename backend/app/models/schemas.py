@@ -96,3 +96,34 @@ class ChatResponse(BaseModel):
 class PlanSelectRequest(BaseModel):
     plan_id: str
     session_id: Optional[str] = None
+
+
+# --- POI & Crawl Data ---
+
+class POIData(BaseModel):
+    """A point-of-interest extracted from crawled notes or AI generation."""
+    name: str
+    address: Optional[str] = None
+    city: str
+    tags: list[str] = Field(default_factory=list)
+    description: Optional[str] = None
+    cost_range: Optional[str] = None  # "50以内" / "50-100" / "100+"
+    suitable_for: list[str] = Field(default_factory=list)  # ["孕妇友好", "亲子", "情侣"]
+    source_type: str = "xiaohongshu"  # "xiaohongshu" | "ai_generated"
+    source_url: Optional[str] = None
+    source_likes: Optional[int] = None
+    route_suggestions: list[str] = Field(default_factory=list)
+
+
+class CrawlResult(BaseModel):
+    """A single note result from XHS crawling."""
+    note_id: str
+    title: str
+    content: str
+    likes: int = 0
+    comments: int = 0
+    shares: int = 0
+    author: Optional[str] = None
+    images: list[str] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
+    url: str
