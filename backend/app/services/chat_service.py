@@ -138,9 +138,48 @@ class ChatService:
     async def _generate_and_present(
         self, session: dict[str, Any], ctx: UserContext, session_id: str = ""
     ) -> ChatResponse:
-        """Parallel-fetch weather + POIs, then generate plans."""
+        """Parallel-fetch weather + POIs, then generate plans.
+
+        Applies a 10-second timeout to the entire generation pipeline.
+        On timeout, returns a friendly message and tracks the error.
+        """
         history: list[dict[str, str]] = session["history"]
 
+        try:
+            plans = await asyncio.wait_for(
+                self._do_generate(session, ctx, session_id),
+                timeout=10.0,
+            )
+        except asyncio.TimeoutError:
+            logger.warning("Plan generation timed out for session %s", session_id)
+            await analytics.track(
+                "error",
+                session_id=session_id,
+                properties={"error_type": "timeout", "stage": "generate_plans"},
+            )
+            reply = "抱歉，生成方案花了太长时间，请稍后再试 🙏"
+            session["state"] = ConversationState.COLLECTING
+            history.append({"role": "assistant", "content": reply})
+            return ChatResponse(reply=reply, state=ConversationState.COLLECTING)
+
+        session["state"] = ConversationState.PRESENTING
+        session["current_plans"] = plans
+
+        await analytics.track("plans_generated", session_id=session_id, properties={"count": len(plans)})
+
+        reply = "为您找到以下方案："
+        history.append({"role": "assistant", "content": reply})
+
+        return ChatResponse(
+            reply=reply,
+            plans=plans,
+            state=ConversationState.PRESENTING,
+        )
+
+    async def _do_generate(
+        self, session: dict[str, Any], ctx: UserContext, session_id: str = ""
+    ) -> list[PlanCard]:
+        """Inner generation logic: parallel weather + POI fetch, then plan generation."""
         # Parallel fetch: weather + POIs (15-second timeline from tech design)
         weather_task = asyncio.create_task(self.weather.get_weather(ctx.city or "苏州"))
         pois_task = asyncio.create_task(
@@ -160,16 +199,4 @@ class ChatService:
             rejected_plans=session.get("rejected_plans"),
         )
 
-        session["state"] = ConversationState.PRESENTING
-        session["current_plans"] = plans
-
-        await analytics.track("plans_generated", session_id=session_id, properties={"count": len(plans)})
-
-        reply = "为您找到以下方案："
-        history.append({"role": "assistant", "content": reply})
-
-        return ChatResponse(
-            reply=reply,
-            plans=plans,
-            state=ConversationState.PRESENTING,
-        )
+        return plans

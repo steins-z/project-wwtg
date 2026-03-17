@@ -1,7 +1,8 @@
-"""Plan service: plan generation and storage."""
+"""Plan service: plan generation and storage with LRU detail cache."""
 
 import logging
 import uuid
+from collections import OrderedDict
 from typing import Any
 
 from app.models.schemas import PlanCard, PlanDetail, PlanSource, PlanStop, UserContext
@@ -9,6 +10,9 @@ from app.services.llm_service import LLMService
 from app.services.map_service import MapService
 
 logger = logging.getLogger(__name__)
+
+# Maximum number of PlanDetail objects to cache
+_DETAIL_CACHE_MAX_SIZE: int = 100
 
 
 class PlanService:
@@ -23,6 +27,8 @@ class PlanService:
         self.map = map_service
         # In-memory plan store keyed by plan_id
         self._plans: dict[str, dict[str, Any]] = {}
+        # LRU cache for PlanDetail objects (OrderedDict for O(1) move-to-end)
+        self._detail_cache: OrderedDict[str, PlanDetail] = OrderedDict()
 
     async def generate_plans(
         self,
@@ -62,12 +68,34 @@ class PlanService:
         return cards
 
     def get_plan_detail(self, plan_id: str) -> PlanDetail:
-        """Get full plan detail, enriched with nav links."""
+        """Get full plan detail, enriched with nav links.
+
+        Uses an in-memory LRU cache (maxsize=100) to avoid
+        re-building PlanDetail from raw data on repeated lookups.
+        """
+        # Check LRU cache first
+        if plan_id in self._detail_cache:
+            logger.debug("Plan detail cache HIT for %s", plan_id)
+            # Move to end (most recently used)
+            self._detail_cache.move_to_end(plan_id)
+            return self._detail_cache[plan_id]
+
+        logger.debug("Plan detail cache MISS for %s", plan_id)
+
+        # Build from raw data or fallback
         plan_data = self._plans.get(plan_id)
         if plan_data:
-            return self._plan_data_to_detail(plan_data)
-        # Fallback to mock
-        return self.get_mock_detail(plan_id)
+            detail = self._plan_data_to_detail(plan_data)
+        else:
+            detail = self.get_mock_detail(plan_id)
+
+        # Store in LRU cache, evict oldest if full
+        self._detail_cache[plan_id] = detail
+        if len(self._detail_cache) > _DETAIL_CACHE_MAX_SIZE:
+            evicted_key, _ = self._detail_cache.popitem(last=False)
+            logger.debug("Plan detail cache evicted %s (maxsize=%d)", evicted_key, _DETAIL_CACHE_MAX_SIZE)
+
+        return detail
 
     def _plan_data_to_detail(self, plan_data: dict[str, Any]) -> PlanDetail:
         """Convert raw plan data dict to PlanDetail model."""

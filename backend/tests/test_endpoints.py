@@ -1,4 +1,6 @@
-"""Tests for chat, plan, and auth endpoints."""
+"""Tests for chat, plan, auth, and analytics endpoints."""
+
+from unittest.mock import AsyncMock, patch
 
 from fastapi.testclient import TestClient
 
@@ -128,3 +130,114 @@ def test_wx_login_stub() -> None:
     data = response.json()
     assert "token" in data
     assert "openid" in data
+
+
+# --- Analytics ---
+
+def test_analytics_track_success() -> None:
+    """POST /api/v1/analytics/track should accept and log an event."""
+    response = client.post(
+        "/api/v1/analytics/track",
+        json={
+            "event": "navigation_clicked",
+            "session_id": "test-session-analytics",
+            "properties": {"plan_id": "plan-abc", "stop_name": "双塔市集"},
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "ok"
+
+
+def test_analytics_track_minimal() -> None:
+    """Track endpoint should work with only the event field."""
+    response = client.post(
+        "/api/v1/analytics/track",
+        json={"event": "page_view"},
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "ok"
+
+
+def test_analytics_track_missing_event() -> None:
+    """Track endpoint should return 422 when event is missing."""
+    response = client.post(
+        "/api/v1/analytics/track",
+        json={"session_id": "sid"},
+    )
+    assert response.status_code == 422
+
+
+# --- Message Validation ---
+
+def test_chat_empty_message_returns_400() -> None:
+    """Empty message should return 400."""
+    response = client.post(
+        "/api/v1/chat/message",
+        json={"message": ""},
+    )
+    assert response.status_code == 400
+
+
+def test_chat_whitespace_only_message_returns_400() -> None:
+    """Whitespace-only message should return 400."""
+    response = client.post(
+        "/api/v1/chat/message",
+        json={"message": "   "},
+    )
+    assert response.status_code == 400
+
+
+def test_chat_message_too_long_returns_400() -> None:
+    """Message exceeding 500 chars should return 400."""
+    long_message = "a" * 501
+    response = client.post(
+        "/api/v1/chat/message",
+        json={"message": long_message},
+    )
+    assert response.status_code == 400
+    data = response.json()
+    assert "500" in data["detail"]
+
+
+def test_chat_message_at_max_length_ok() -> None:
+    """Message at exactly 500 chars should be accepted."""
+    msg = "苏州" + "a" * 496  # 2 Chinese chars + 496 ASCII = 498 Python chars, under 500
+    response = client.post(
+        "/api/v1/chat/message",
+        json={"message": msg},
+    )
+    assert response.status_code == 200
+
+
+# --- LLM Timeout Handling ---
+
+def test_chat_timeout_returns_friendly_message() -> None:
+    """When plan generation times out, should return a friendly message."""
+    import asyncio
+
+    async def slow_generate(*args, **kwargs):
+        await asyncio.sleep(20)
+        return []
+
+    with patch.object(
+        client.app,  # type: ignore[union-attr]
+        "_state",
+        create=True,
+    ):
+        # Patch the _do_generate method on the ChatService instance used by the app
+        from app.api.chat import chat_service
+
+        original = chat_service._do_generate
+        chat_service._do_generate = slow_generate  # type: ignore[assignment]
+        try:
+            response = client.post(
+                "/api/v1/chat/message",
+                json={"message": "苏州", "session_id": "timeout-test-session"},
+            )
+            assert response.status_code == 200
+            data = response.json()
+            assert "抱歉" in data["reply"] or "太长" in data["reply"] or "稍后" in data["reply"]
+        finally:
+            chat_service._do_generate = original  # type: ignore[assignment]
+

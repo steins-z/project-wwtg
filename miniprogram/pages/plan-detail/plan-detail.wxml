@@ -64,6 +64,32 @@
   </view>
 </view>
 
-<view wx:if="{{loading}}" class="loading-view">
-  <text>加载中...</text>
+<view wx:if="{{loading}}" class="loading-skeleton">
+  <!-- Skeleton: title -->
+  <view class="skeleton skeleton-title"></view>
+
+  <!-- Skeleton: section label -->
+  <view class="skeleton skeleton-section-label"></view>
+
+  <!-- Skeleton: timeline stops -->
+  <view class="skeleton-timeline">
+    <view class="skeleton-stop" wx:for="{{[1,2,3]}}" wx:key="*this">
+      <view class="skeleton-dot-col">
+        <view class="skeleton skeleton-dot"></view>
+        <view wx:if="{{index < 2}}" class="skeleton skeleton-line"></view>
+      </view>
+      <view class="skeleton-stop-body">
+        <view class="skeleton skeleton-stop-header"></view>
+        <view class="skeleton skeleton-stop-sub"></view>
+        <view class="skeleton skeleton-stop-text"></view>
+        <view class="skeleton skeleton-stop-btn"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- Skeleton: tips -->
+  <view class="skeleton-tips">
+    <view class="skeleton skeleton-tip-line"></view>
+    <view class="skeleton skeleton-tip-line"></view>
+  </view>
 </view>

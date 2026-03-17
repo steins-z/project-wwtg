@@ -25,8 +25,23 @@ Page({
     }
   },
 
+  /**
+   * Track a navigation button tap via the analytics endpoint.
+   * Sends event=navigation_clicked with plan_id and stop_name in properties.
+   */
+  trackNavClick(stopName) {
+    const plan = this.data.plan;
+    api.trackEvent('navigation_clicked', {
+      plan_id: plan ? plan.plan_id : '',
+      stop_name: stopName || '',
+    });
+  },
+
   onNavigate(e) {
     const { name, navLink } = e.currentTarget.dataset;
+
+    // Track navigation click
+    this.trackNavClick(name);
 
     // Try to parse lat/lng from nav_link
     if (navLink) {

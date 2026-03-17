@@ -196,14 +196,17 @@ class DataService:
             List of POI dicts. Empty list on cache miss.
         """
         if self._redis is None:
+            logger.debug("Cache SKIP for %s (no Redis client configured)", city)
             return []
 
         key = _CACHE_KEY.format(city=city)
         try:
             raw = await self._redis.get(key)
             if not raw:
+                logger.info("Cache MISS for %s", city)
                 return []
 
+            logger.info("Cache HIT for %s", city)
             pois: list[dict[str, Any]] = json.loads(raw)
 
             # Filter by tags if requested

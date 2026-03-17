@@ -104,4 +104,17 @@ async function getPlanDetail(planId) {
   return request('/plan/detail/' + planId);
 }
 
-module.exports = { request, sendChatMessage, getPlanDetail };
+/**
+ * 上报分析事件（fire-and-forget，不阻塞 UI）
+ */
+function trackEvent(event, properties = {}) {
+  const sessionId = app.globalData.sessionId || '';
+  request('/analytics/track', {
+    method: 'POST',
+    data: { event, session_id: sessionId, properties },
+  }).catch((err) => {
+    console.warn('trackEvent failed:', err);
+  });
+}
+
+module.exports = { request, sendChatMessage, getPlanDetail, trackEvent };
