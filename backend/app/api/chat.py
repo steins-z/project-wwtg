@@ -1,11 +1,9 @@
-"""Chat endpoints: message (SSE) and history."""
+"""Chat endpoints: message and history."""
 
-import json
 import uuid
-from typing import AsyncGenerator
 
 from fastapi import APIRouter
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse
 
 from app.models.schemas import ChatMessageRequest, ChatMessageResponse
 from app.services.chat_service import ChatService
@@ -14,43 +12,27 @@ router = APIRouter()
 chat_service = ChatService()
 
 
-async def _sse_stream(session_id: str, message: str) -> AsyncGenerator[str, None]:
-    """Generate SSE events for a chat message."""
-    # Status: parsing intent
-    yield f"event: thinking\ndata: {json.dumps({'status': 'parsing_intent', 'session_id': session_id})}\n\n"
-
-    # Process through chat service
-    response = await chat_service.process_message(session_id, message)
-
-    # If plans were generated, stream them
-    if response.plans:
-        yield f"event: thinking\ndata: {json.dumps({'status': 'querying_weather', 'session_id': session_id})}\n\n"
-        yield f"event: thinking\ndata: {json.dumps({'status': 'generating_plans', 'session_id': session_id})}\n\n"
-
-        # Reply text
-        yield f"event: message\ndata: {json.dumps({'content': response.reply, 'session_id': session_id}, ensure_ascii=False)}\n\n"
-
-        # Plan cards
-        for plan in response.plans:
-            yield f"event: plan_card\ndata: {json.dumps({**plan.model_dump(), 'session_id': session_id}, ensure_ascii=False)}\n\n"
-
-        yield f"event: actions\ndata: {json.dumps({'options': ['select_a', 'select_b', 'reject'], 'session_id': session_id})}\n\n"
-    else:
-        # Text-only response
-        yield f"event: message\ndata: {json.dumps({'content': response.reply, 'session_id': session_id}, ensure_ascii=False)}\n\n"
-
-    yield f"event: done\ndata: {json.dumps({'session_id': session_id})}\n\n"
-
-
 @router.post("/message")
-async def send_message(req: ChatMessageRequest) -> StreamingResponse:
-    """Send a chat message, receive SSE streaming response."""
+async def send_message(req: ChatMessageRequest) -> JSONResponse:
+    """Send a chat message, receive JSON response.
+
+    MVP: synchronous JSON response (no streaming).
+    TODO(M5): migrate to SSE with enableChunked on mini program side.
+    """
     session_id = req.session_id or str(uuid.uuid4())
-    return StreamingResponse(
-        _sse_stream(session_id, req.message),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Session-Id": session_id},
-    )
+
+    response = await chat_service.process_message(session_id, req.message)
+
+    result: dict = {
+        "session_id": session_id,
+        "reply": response.reply,
+    }
+
+    if response.plans:
+        result["plans"] = [p.model_dump() for p in response.plans]
+        result["actions"] = ["select_a", "select_b", "reject"]
+
+    return JSONResponse(content=result)
 
 
 @router.get("/history/{session_id}")

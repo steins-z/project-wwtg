@@ -9,47 +9,27 @@ client = TestClient(app)
 
 # --- Chat ---
 
-def test_chat_message_returns_sse_stream() -> None:
-    """POST /api/v1/chat/message returns SSE with plan cards."""
+def test_chat_message_returns_json() -> None:
+    """POST /api/v1/chat/message returns JSON with session_id."""
     response = client.post(
         "/api/v1/chat/message",
         json={"message": "苏州，和老公，周末去哪玩"},
     )
     assert response.status_code == 200
-    assert response.headers["content-type"].startswith("text/event-stream")
-    body = response.text
-    assert "event: thinking" in body
-    assert "event: done" in body
+    data = response.json()
+    assert "session_id" in data
+    assert "reply" in data
 
 
 def test_chat_message_with_session_id() -> None:
-    """Session ID passed through in header."""
+    """Session ID passed through in response."""
     response = client.post(
         "/api/v1/chat/message",
         json={"message": "hello", "session_id": "test-sid-001"},
     )
     assert response.status_code == 200
-    assert response.headers.get("x-session-id") == "test-sid-001"
-
-
-def test_chat_message_includes_session_in_body() -> None:
-    """SSE events include session_id in data."""
-    response = client.post(
-        "/api/v1/chat/message",
-        json={"message": "苏州", "session_id": "test-sid-body"},
-    )
-    assert response.status_code == 200
-    assert "test-sid-body" in response.text
-
-
-def test_chat_sse_status_updates() -> None:
-    """SSE should include parsing_intent status."""
-    response = client.post(
-        "/api/v1/chat/message",
-        json={"message": "苏州，和老公"},
-    )
-    body = response.text
-    assert "parsing_intent" in body
+    data = response.json()
+    assert data["session_id"] == "test-sid-001"
 
 
 def test_chat_generates_plans_with_city() -> None:
@@ -58,9 +38,10 @@ def test_chat_generates_plans_with_city() -> None:
         "/api/v1/chat/message",
         json={"message": "苏州"},
     )
-    body = response.text
-    assert "event: plan_card" in body
-    assert "event: actions" in body
+    data = response.json()
+    assert "plans" in data
+    assert len(data["plans"]) > 0
+    assert "actions" in data
 
 
 def test_chat_asks_for_city_without_one() -> None:
@@ -69,10 +50,10 @@ def test_chat_asks_for_city_without_one() -> None:
         "/api/v1/chat/message",
         json={"message": "你好"},
     )
-    body = response.text
-    assert "event: message" in body
-    # Should not have plan cards
-    assert "event: plan_card" not in body
+    data = response.json()
+    assert "reply" in data
+    # Should not have plans
+    assert "plans" not in data or len(data.get("plans", [])) == 0
 
 
 # --- Plan ---

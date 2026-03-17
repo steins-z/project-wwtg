@@ -44,7 +44,6 @@ GENERATE_PLANS_SYSTEM = """你是"周末搭子"，像一个靠谱的本地朋友
   "tags": ["标签列表"],
   "stops_count": 站点数量,
   "source_count": 数据来源数,
-  "source_type": "xiaohongshu或ai_generated",
   "stops": [
     {
       "name": "地点名",

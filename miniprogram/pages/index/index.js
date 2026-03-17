@@ -19,30 +19,25 @@ Page({
     this.setData({ inputValue: e.detail.value });
   },
 
-  async onSend() {
-    const message = this.data.inputValue.trim();
+  /**
+   * Unified send: all messages go through this single path.
+   * @param {string} message - user message text
+   */
+  async sendMessage(message) {
     if (!message || this.data.loading) return;
 
-    this.addMessage('user', message);
-    this.setData({ inputValue: '', loading: true, loadingText: '正在了解你的需求...' });
+    this.setData({ loading: true, loadingText: '正在了解你的需求...' });
 
     try {
+      const res = await api.sendChatMessage(message);
       const app = getApp();
-      if (app.globalData.mockMode) {
-        const res = await api.sendChatMessage(message);
-        this._handleResponse(res);
-      } else {
-        // Real API call
-        this.setData({ loadingText: '正在了解你的需求...' });
-        const res = await api.sendChatMessage(message);
 
-        if (res.session_id) {
-          this.setData({ sessionId: res.session_id });
-          app.globalData.sessionId = res.session_id;
-        }
-
-        this._handleResponse(res);
+      if (res.session_id) {
+        this.setData({ sessionId: res.session_id });
+        app.globalData.sessionId = res.session_id;
       }
+
+      this._handleResponse(res);
     } catch (err) {
       this.addMessage('assistant', '网络出了点问题，请稍后重试 😅');
       console.error('Chat error:', err);
@@ -51,13 +46,22 @@ Page({
     this.setData({ loading: false });
   },
 
+  /** Called from input box send button. */
+  onSend() {
+    const message = this.data.inputValue.trim();
+    if (!message) return;
+
+    this.addMessage('user', message);
+    this.setData({ inputValue: '' });
+    this.sendMessage(message);
+  },
+
   _handleResponse(res) {
     if (res.plans && res.plans.length > 0) {
       this.addMessage('assistant', res.reply || '为您找到以下方案：');
-      res.plans.forEach((plan, index) => {
+      res.plans.forEach((plan) => {
         this.addMessage('plan_card', plan);
       });
-      // Add action buttons
       this.addMessage('actions', {
         options: [
           { key: 'select_a', label: '就选A' },
@@ -89,26 +93,13 @@ Page({
   onActionTap(e) {
     const action = e.currentTarget.dataset.action;
     if (action === 'select_a' || action === 'select_b') {
-      this.addMessage('user', action === 'select_a' ? '就选A' : '就选B');
-      this.setData({ loading: true, loadingText: '方案已选择！' });
-      setTimeout(() => {
-        this.addMessage('assistant', '好的，方案已选择！祝你周末愉快 🎉');
-        this.setData({ loading: false });
-      }, 500);
+      const label = action === 'select_a' ? '就选A' : '就选B';
+      this.addMessage('user', label);
+      // TODO: call plan/select API
+      this.addMessage('assistant', '好的，方案已选择！祝你周末愉快 🎉');
     } else if (action === 'reject') {
       this.addMessage('user', '都不喜欢，换一批');
-      this.setData({ loading: true, loadingText: '正在重新生成方案...' });
-      this.onSendMessage('都不喜欢，换一批');
+      this.sendMessage('都不喜欢，换一批');
     }
-  },
-
-  async onSendMessage(message) {
-    try {
-      const res = await api.sendChatMessage(message);
-      this._handleResponse(res);
-    } catch (err) {
-      this.addMessage('assistant', '网络出了点问题，请稍后重试 😅');
-    }
-    this.setData({ loading: false });
   },
 });
