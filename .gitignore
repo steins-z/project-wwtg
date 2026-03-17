@@ -26,3 +26,4 @@ Thumbs.db
 miniprogram/node_modules/
 miniprogram/miniprogram_npm/
 *.cookies.json
+logs/

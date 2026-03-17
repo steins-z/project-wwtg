@@ -90,7 +90,7 @@ class ChatService:
                     return ChatResponse(reply=reply, state=ConversationState.COLLECTING)
 
                 session["state"] = ConversationState.GENERATING
-                return await self._generate_and_present(session, ctx)
+                return await self._generate_and_present(session, ctx, session_id)
 
             if "选" in message or "select" in lower_msg:
                 # Plan selected — acknowledge
@@ -133,10 +133,10 @@ class ChatService:
 
         # --- Enough context → generate plans ---
         session["state"] = ConversationState.GENERATING
-        return await self._generate_and_present(session, ctx)
+        return await self._generate_and_present(session, ctx, session_id)
 
     async def _generate_and_present(
-        self, session: dict[str, Any], ctx: UserContext
+        self, session: dict[str, Any], ctx: UserContext, session_id: str = ""
     ) -> ChatResponse:
         """Parallel-fetch weather + POIs, then generate plans."""
         history: list[dict[str, str]] = session["history"]
@@ -163,7 +163,7 @@ class ChatService:
         session["state"] = ConversationState.PRESENTING
         session["current_plans"] = plans
 
-        await analytics.track("plans_generated", properties={"count": len(plans)})
+        await analytics.track("plans_generated", session_id=session_id, properties={"count": len(plans)})
 
         reply = "为您找到以下方案："
         history.append({"role": "assistant", "content": reply})
