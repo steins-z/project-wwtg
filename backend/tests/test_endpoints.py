@@ -88,6 +88,35 @@ def test_plan_detail_fallback() -> None:
     assert len(data["stops"]) > 0
 
 
+def test_reject_regenerate_flow() -> None:
+    """Reject → re-generate should return new plans."""
+    # Step 1: generate initial plans
+    r1 = client.post("/api/v1/chat/message", json={"message": "苏州", "session_id": "reject-test-1"})
+    assert r1.status_code == 200
+    d1 = r1.json()
+    assert "plans" in d1
+
+    # Step 2: reject
+    r2 = client.post("/api/v1/chat/message", json={"message": "都不喜欢，换一批", "session_id": "reject-test-1"})
+    assert r2.status_code == 200
+    d2 = r2.json()
+    assert "plans" in d2
+
+
+def test_multiple_rejections_suggests_refine() -> None:
+    """After 3+ rejections, suggest the user refine preferences."""
+    sid = "reject-multi-test"
+    # Generate initial plans
+    client.post("/api/v1/chat/message", json={"message": "苏州", "session_id": sid})
+
+    # Reject 3 times
+    for _ in range(3):
+        resp = client.post("/api/v1/chat/message", json={"message": "换一批", "session_id": sid})
+    data = resp.json()
+    assert "plans" not in data or len(data.get("plans", [])) == 0
+    assert "具体" in data["reply"] or "需求" in data["reply"]
+
+
 # --- Auth ---
 
 def test_wx_login_stub() -> None:

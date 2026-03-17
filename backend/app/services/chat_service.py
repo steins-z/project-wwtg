@@ -11,6 +11,7 @@ from app.models.schemas import (
     PlanCard,
     UserContext,
 )
+from app.services.analytics import analytics
 from app.services.data_service import DataService
 from app.services.llm_service import LLMService
 from app.services.map_service import MapService
@@ -44,19 +45,26 @@ class ChatService:
                 "context": UserContext(),
                 "history": [],  # list of {"role": str, "content": str}
                 "rejected_plans": [],
+                "rejection_count": 0,
                 "current_plans": [],
+                "selected_plan": None,
             }
         return self._sessions[session_id]
 
     async def process_message(self, session_id: str, message: str) -> ChatResponse:
         """Process a user message through the full conversation flow."""
         session = self._get_session(session_id)
+        is_new = len(session["history"]) == 0
         state = session["state"]
         ctx: UserContext = session["context"]
         history: list[dict[str, str]] = session["history"]
 
         # Add user message to history
         history.append({"role": "user", "content": message})
+        if is_new:
+            await analytics.track("session_start", session_id=session_id)
+        await analytics.track("message_sent", session_id=session_id,
+                              properties={"message_length": len(message)})
 
         # --- Handle rejection / selection from PRESENTING state ---
         if state == ConversationState.PRESENTING:
@@ -68,8 +76,20 @@ class ChatService:
                         session["rejected_plans"].append(plan.title)
                     elif isinstance(plan, dict):
                         session["rejected_plans"].append(plan.get("title", ""))
+                session["rejection_count"] = session.get("rejection_count", 0) + 1
+                await analytics.track("plan_rejected", session_id=session_id, properties={
+                    "rejection_count": session["rejection_count"],
+                })
+
+                # Edge case: 3+ rejections → suggest refining preferences
+                if session["rejection_count"] >= 3:
+                    reply = ("看起来这些方案都不太合适 😅 "
+                             "要不试试告诉我更具体的需求？比如想去什么类型的地方、预算范围、或者特别想做的事情？")
+                    session["state"] = ConversationState.COLLECTING
+                    history.append({"role": "assistant", "content": reply})
+                    return ChatResponse(reply=reply, state=ConversationState.COLLECTING)
+
                 session["state"] = ConversationState.GENERATING
-                # Re-generate
                 return await self._generate_and_present(session, ctx)
 
             if "选" in message or "select" in lower_msg:
@@ -84,6 +104,7 @@ class ChatService:
 
         # --- Parse intent via LLM ---
         parsed = await self.llm.parse_intent(message, history)
+        await analytics.track("intent_parsed", session_id=session_id, properties={"parsed": parsed})
 
         # Merge parsed fields into context
         if parsed.get("city"):
@@ -141,6 +162,8 @@ class ChatService:
 
         session["state"] = ConversationState.PRESENTING
         session["current_plans"] = plans
+
+        await analytics.track("plans_generated", properties={"count": len(plans)})
 
         reply = "为您找到以下方案："
         history.append({"role": "assistant", "content": reply})

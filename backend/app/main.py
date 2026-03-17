@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
 from app.config import settings
+from app.middleware import ErrorHandlingMiddleware, RequestLoggingMiddleware
 
 
 @asynccontextmanager
@@ -25,6 +26,10 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+# Middleware (order matters: first added = outermost)
+app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(ErrorHandlingMiddleware)
 
 # CORS — allow mini-program and dev origins
 app.add_middleware(
