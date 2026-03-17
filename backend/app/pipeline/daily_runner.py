@@ -50,7 +50,7 @@ async def main() -> None:
     cookie_manager = CookieManager(redis_client=redis_client)
 
     # Check cookie status before crawling
-    if await cookie_manager.is_expired():
+    if cookie_manager.is_expired():
         logger.warning(
             "⚠️ XHS cookies are expired or missing! "
             "Crawler will likely fail. Please re-login and update cookies."
