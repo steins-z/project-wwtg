@@ -26,7 +26,15 @@ Page({
   async sendMessage(message) {
     if (!message || this.data.loading) return;
 
-    this.setData({ loading: true, loadingText: '正在了解你的需求...' });
+    this.setData({ loading: true, loadingText: '正在了解你的需求…' });
+
+    // Staged loading text (pure frontend timer, no backend dependency)
+    this._loadingTimer1 = setTimeout(() => {
+      if (this.data.loading) this.setData({ loadingText: '查看天气和热门玩法…' });
+    }, 3000);
+    this._loadingTimer2 = setTimeout(() => {
+      if (this.data.loading) this.setData({ loadingText: '方案生成中，马上好…' });
+    }, 8000);
 
     try {
       const res = await api.sendChatMessage(message);
@@ -43,6 +51,8 @@ Page({
       console.error('Chat error:', err);
     }
 
+    clearTimeout(this._loadingTimer1);
+    clearTimeout(this._loadingTimer2);
     this.setData({ loading: false });
   },
 
