@@ -1,0 +1,44 @@
+<!-- pages/plan-detail/plan-detail.wxml — 方案详情 -->
+<view class="detail-container" wx:if="{{plan}}">
+  <!-- 标题 -->
+  <view class="detail-header">
+    <text class="detail-title">{{plan.title}}</text>
+  </view>
+
+  <!-- 站点列表 -->
+  <view class="stops-section">
+    <text class="section-title">📍 路线</text>
+    <view wx:for="{{plan.stops}}" wx:key="name" class="stop-item">
+      <view class="stop-time">{{item.arrive_at}}</view>
+      <view class="stop-content">
+        <text class="stop-name">{{item.name}}</text>
+        <text class="stop-duration">停留 {{item.stay_duration}}</text>
+        <text class="stop-rec">{{item.recommendation}}</text>
+        <view wx:if="{{item.walk_to_next}}" class="stop-walk">
+          🚶 {{item.walk_to_next}}
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- Tips -->
+  <view class="tips-section" wx:if="{{plan.tips.length > 0}}">
+    <text class="section-title">💡 贴心提示</text>
+    <view wx:for="{{plan.tips}}" wx:key="*this" class="tip-item">
+      <text>{{item}}</text>
+    </view>
+  </view>
+
+  <!-- 数据来源 -->
+  <view class="sources-section" wx:if="{{plan.sources.length > 0}}">
+    <text class="section-title">📚 数据来源</text>
+    <view wx:for="{{plan.sources}}" wx:key="title" class="source-item">
+      <text class="source-title">{{item.title}}</text>
+      <text class="source-likes">❤️ {{item.likes}}</text>
+    </view>
+  </view>
+</view>
+
+<view wx:if="{{loading}}" class="loading-view">
+  <text>加载中...</text>
+</view>
