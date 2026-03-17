@@ -1,0 +1,107 @@
+/* pages/plan-detail/plan-detail.wxss */
+.detail-container {
+  padding: 30rpx;
+}
+
+.detail-header {
+  margin-bottom: 40rpx;
+}
+
+.detail-title {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  margin-bottom: 20rpx;
+  display: block;
+}
+
+.stops-section {
+  margin-bottom: 40rpx;
+}
+
+.stop-item {
+  display: flex;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #eee;
+}
+
+.stop-time {
+  width: 100rpx;
+  font-size: 28rpx;
+  color: #FF6B35;
+  font-weight: bold;
+}
+
+.stop-content {
+  flex: 1;
+}
+
+.stop-name {
+  font-size: 30rpx;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.stop-duration {
+  font-size: 24rpx;
+  color: #999;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.stop-rec {
+  font-size: 26rpx;
+  color: #666;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.stop-walk {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 12rpx;
+}
+
+.tips-section {
+  margin-bottom: 40rpx;
+}
+
+.tip-item {
+  padding: 12rpx 0;
+  font-size: 26rpx;
+  color: #666;
+}
+
+.sources-section {
+  margin-bottom: 40rpx;
+}
+
+.source-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 12rpx 0;
+}
+
+.source-title {
+  font-size: 26rpx;
+  color: #666;
+}
+
+.source-likes {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.loading-view {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 60vh;
+  color: #999;
+}
