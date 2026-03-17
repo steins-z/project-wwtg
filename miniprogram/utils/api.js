@@ -29,37 +29,6 @@ function request(path, options = {}) {
 }
 
 /**
- * Parse SSE text response into structured data
- */
-function parseSSE(text) {
-  const result = { reply: '', plans: [], session_id: null };
-  const lines = text.split('\n');
-  let currentEvent = '';
-
-  for (const line of lines) {
-    if (line.startsWith('event: ')) {
-      currentEvent = line.slice(7).trim();
-    } else if (line.startsWith('data: ')) {
-      try {
-        const data = JSON.parse(line.slice(6));
-        if (data.session_id) {
-          result.session_id = data.session_id;
-        }
-        if (currentEvent === 'message' && data.content) {
-          result.reply = data.content;
-        } else if (currentEvent === 'plan_card') {
-          result.plans.push(data);
-        }
-      } catch (e) {
-        // ignore parse errors
-      }
-    }
-  }
-
-  return result;
-}
-
-/**
  * 发送聊天消息
  */
 async function sendChatMessage(message) {
@@ -97,30 +66,17 @@ async function sendChatMessage(message) {
     };
   }
 
-  // Real API: POST to backend, parse SSE response
-  return new Promise((resolve, reject) => {
-    wx.request({
-      url: app.globalData.baseURL + '/chat/message',
-      method: 'POST',
-      data: { message, session_id: app.globalData.sessionId },
-      header: { 'Content-Type': 'application/json' },
-      success(res) {
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          // wx.request receives SSE as plain text
-          const parsed = parseSSE(typeof res.data === 'string' ? res.data : JSON.stringify(res.data));
-          if (parsed.session_id) {
-            app.globalData.sessionId = parsed.session_id;
-          }
-          resolve(parsed);
-        } else {
-          reject(res);
-        }
-      },
-      fail(err) {
-        reject(err);
-      },
-    });
+  // Real API: POST to backend, receive JSON response directly
+  const data = await request('/chat/message', {
+    method: 'POST',
+    data: { message, session_id: app.globalData.sessionId },
   });
+
+  if (data.session_id) {
+    app.globalData.sessionId = data.session_id;
+  }
+
+  return data;
 }
 
 /**
