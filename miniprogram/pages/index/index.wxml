@@ -1,0 +1,48 @@
+<!-- pages/index/index.wxml — 聊天界面 -->
+<view class="chat-container">
+  <!-- 消息列表 -->
+  <scroll-view 
+    class="message-list" 
+    scroll-y 
+    scroll-into-view="{{scrollToView}}"
+    scroll-with-animation
+  >
+    <block wx:for="{{messages}}" wx:key="id">
+      <!-- 普通消息气泡 -->
+      <view wx:if="{{item.role !== 'plan_card'}}" id="{{item.id}}" class="message-row {{item.role}}">
+        <view class="bubble {{item.role}}-bubble">
+          <text>{{item.content}}</text>
+        </view>
+      </view>
+
+      <!-- 方案卡片 -->
+      <view wx:if="{{item.role === 'plan_card'}}" id="{{item.id}}" class="message-row assistant">
+        <plan-card 
+          plan="{{item.content}}" 
+          bind:tap="onPlanTap" 
+          data-plan-id="{{item.content.plan_id}}"
+        />
+      </view>
+    </block>
+
+    <!-- 加载指示器 -->
+    <view wx:if="{{loading}}" class="message-row assistant">
+      <view class="bubble assistant-bubble loading-bubble">
+        <text>思考中...</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 输入区域 -->
+  <view class="input-area">
+    <input 
+      class="chat-input" 
+      value="{{inputValue}}" 
+      bindinput="onInput" 
+      bindconfirm="onSend"
+      placeholder="告诉我你的周末计划..." 
+      confirm-type="send"
+    />
+    <button class="send-btn" bindtap="onSend" disabled="{{loading}}">发送</button>
+  </view>
+</view>
