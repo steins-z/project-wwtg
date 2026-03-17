@@ -4,7 +4,7 @@
 **作者：** SuperCrew002  
 **日期：** 2026-03-17  
 **基于：** PRD v1.1  
-**状态：** Reviewed - 已评审（PM 侧 + 成本 + 部署方案已确认，LLM 选型待 benchmark）
+**状态：** Approved - LLM 默认 DeepSeek V3，benchmark 出来做 delta 调整
 
 ---
 
