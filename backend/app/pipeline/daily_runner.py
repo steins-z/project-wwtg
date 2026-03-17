@@ -48,6 +48,14 @@ async def main() -> None:
         logger.warning("Playwright not available, running in mock mode (no crawling)")
 
     cookie_manager = CookieManager(redis_client=redis_client)
+
+    # Check cookie status before crawling
+    if await cookie_manager.is_expired():
+        logger.warning(
+            "⚠️ XHS cookies are expired or missing! "
+            "Crawler will likely fail. Please re-login and update cookies."
+        )
+
     crawler = XHSCrawler(browser=browser, cookie_manager=cookie_manager) if browser else None
     service = DataService(crawler=crawler, redis_client=redis_client)
 
