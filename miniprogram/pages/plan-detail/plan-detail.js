@@ -25,16 +25,26 @@ Page({
     }
   },
 
-  // 打开导航
   onNavigate(e) {
-    const { name, lat, lng } = e.currentTarget.dataset;
-    if (lat && lng) {
-      wx.openLocation({
-        latitude: parseFloat(lat),
-        longitude: parseFloat(lng),
-        name: name,
-        scale: 16,
-      });
+    const { name, navLink } = e.currentTarget.dataset;
+
+    // Try to parse lat/lng from nav_link
+    if (navLink) {
+      const match = navLink.match(/position=([\d.]+),([\d.]+)/);
+      if (match) {
+        const lng = parseFloat(match[1]);
+        const lat = parseFloat(match[2]);
+        wx.openLocation({
+          latitude: lat,
+          longitude: lng,
+          name: name,
+          scale: 16,
+        });
+        return;
+      }
     }
+
+    // Fallback: try to open AMAP mini program
+    wx.showToast({ title: '暂无导航信息', icon: 'none' });
   },
 });

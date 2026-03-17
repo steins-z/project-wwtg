@@ -16,23 +16,30 @@ chat_service = ChatService()
 
 async def _sse_stream(session_id: str, message: str) -> AsyncGenerator[str, None]:
     """Generate SSE events for a chat message."""
-    # Thinking status
-    yield f"event: thinking\ndata: {json.dumps({'status': 'parsing_intent'})}\n\n"
+    # Status: parsing intent
+    yield f"event: thinking\ndata: {json.dumps({'status': 'parsing_intent', 'session_id': session_id})}\n\n"
 
     # Process through chat service
     response = await chat_service.process_message(session_id, message)
 
-    # If plans were generated, stream them as cards
+    # If plans were generated, stream them
     if response.plans:
-        yield f"event: thinking\ndata: {json.dumps({'status': 'generating_plans'})}\n\n"
-        for plan in response.plans:
-            yield f"event: plan_card\ndata: {json.dumps(plan.model_dump(), ensure_ascii=False)}\n\n"
-        yield f"event: actions\ndata: {json.dumps({'options': ['select_a', 'select_b', 'reject']})}\n\n"
-    else:
-        # Text response
-        yield f"event: message\ndata: {json.dumps({'content': response.reply}, ensure_ascii=False)}\n\n"
+        yield f"event: thinking\ndata: {json.dumps({'status': 'querying_weather', 'session_id': session_id})}\n\n"
+        yield f"event: thinking\ndata: {json.dumps({'status': 'generating_plans', 'session_id': session_id})}\n\n"
 
-    yield "event: done\ndata: {}\n\n"
+        # Reply text
+        yield f"event: message\ndata: {json.dumps({'content': response.reply, 'session_id': session_id}, ensure_ascii=False)}\n\n"
+
+        # Plan cards
+        for plan in response.plans:
+            yield f"event: plan_card\ndata: {json.dumps({**plan.model_dump(), 'session_id': session_id}, ensure_ascii=False)}\n\n"
+
+        yield f"event: actions\ndata: {json.dumps({'options': ['select_a', 'select_b', 'reject'], 'session_id': session_id})}\n\n"
+    else:
+        # Text-only response
+        yield f"event: message\ndata: {json.dumps({'content': response.reply, 'session_id': session_id}, ensure_ascii=False)}\n\n"
+
+    yield f"event: done\ndata: {json.dumps({'session_id': session_id})}\n\n"
 
 
 @router.post("/message")

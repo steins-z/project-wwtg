@@ -1,6 +1,7 @@
 /* pages/plan-detail/plan-detail.wxss */
 .detail-container {
   padding: 30rpx;
+  padding-bottom: 60rpx;
 }
 
 .detail-header {
@@ -16,36 +17,75 @@
 .section-title {
   font-size: 32rpx;
   font-weight: bold;
-  margin-bottom: 20rpx;
+  margin-bottom: 24rpx;
   display: block;
+  color: #333;
 }
 
+/* Timeline */
 .stops-section {
   margin-bottom: 40rpx;
 }
 
-.stop-item {
+.timeline {
+  padding-left: 8rpx;
+}
+
+.timeline-item {
   display: flex;
-  padding: 20rpx 0;
-  border-bottom: 1rpx solid #eee;
+  position: relative;
+  min-height: 160rpx;
+}
+
+.timeline-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 40rpx;
+  flex-shrink: 0;
+}
+
+.timeline-dot {
+  width: 20rpx;
+  height: 20rpx;
+  border-radius: 50%;
+  background-color: #FF6B35;
+  border: 4rpx solid #FFF0E8;
+  flex-shrink: 0;
+  margin-top: 6rpx;
+}
+
+.timeline-line {
+  width: 4rpx;
+  flex: 1;
+  background-color: #FFD4C0;
+  margin: 8rpx 0;
+}
+
+.timeline-content {
+  flex: 1;
+  padding-left: 20rpx;
+  padding-bottom: 32rpx;
+}
+
+.stop-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12rpx;
 }
 
 .stop-time {
-  width: 100rpx;
   font-size: 28rpx;
   color: #FF6B35;
   font-weight: bold;
-}
-
-.stop-content {
-  flex: 1;
+  margin-right: 16rpx;
+  min-width: 80rpx;
 }
 
 .stop-name {
   font-size: 30rpx;
   font-weight: bold;
-  display: block;
-  margin-bottom: 8rpx;
+  color: #333;
 }
 
 .stop-duration {
@@ -59,25 +99,56 @@
   font-size: 26rpx;
   color: #666;
   display: block;
-  margin-bottom: 8rpx;
+  margin-bottom: 12rpx;
+  line-height: 1.5;
 }
 
-.stop-walk {
+.nav-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8rpx 20rpx;
+  background-color: #FF6B35;
+  color: #fff;
+  border-radius: 24rpx;
+  font-size: 24rpx;
+  margin-bottom: 12rpx;
+}
+
+.walk-info {
   font-size: 24rpx;
   color: #999;
-  margin-top: 12rpx;
+  padding: 8rpx 0;
+  border-top: 1rpx dashed #eee;
+  margin-top: 8rpx;
 }
 
+/* Tips */
 .tips-section {
   margin-bottom: 40rpx;
+  background-color: #FFF9F5;
+  border-radius: 16rpx;
+  padding: 24rpx;
 }
 
 .tip-item {
-  padding: 12rpx 0;
-  font-size: 26rpx;
-  color: #666;
+  display: flex;
+  padding: 8rpx 0;
 }
 
+.tip-dot {
+  color: #FF6B35;
+  margin-right: 12rpx;
+  font-size: 26rpx;
+}
+
+.tip-text {
+  font-size: 26rpx;
+  color: #666;
+  flex: 1;
+  line-height: 1.5;
+}
+
+/* Sources */
 .sources-section {
   margin-bottom: 40rpx;
 }
@@ -85,17 +156,22 @@
 .source-item {
   display: flex;
   justify-content: space-between;
-  padding: 12rpx 0;
+  align-items: center;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
 }
 
 .source-title {
   font-size: 26rpx;
   color: #666;
+  flex: 1;
 }
 
 .source-likes {
   font-size: 24rpx;
   color: #999;
+  flex-shrink: 0;
+  margin-left: 16rpx;
 }
 
 .loading-view {

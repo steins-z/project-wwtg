@@ -7,9 +7,22 @@ Component({
     },
   },
 
+  data: {
+    animateIn: false,
+  },
+
+  lifetimes: {
+    attached() {
+      // Slide-up animation on attach
+      setTimeout(() => {
+        this.setData({ animateIn: true });
+      }, 50);
+    },
+  },
+
   methods: {
     onTap() {
-      this.triggerEvent('tap', { planId: this.data.plan.plan_id });
+      this.triggerEvent('plantap', { planId: this.data.plan.plan_id });
     },
   },
 });

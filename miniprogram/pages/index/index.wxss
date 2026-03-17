@@ -3,6 +3,7 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
+  background-color: #F5F5F5;
 }
 
 .message-list {
@@ -22,6 +23,10 @@
 
 .message-row.assistant {
   justify-content: flex-start;
+}
+
+.plan-card-row {
+  width: 100%;
 }
 
 .bubble {
@@ -48,11 +53,65 @@
 
 .loading-bubble {
   color: #999;
-}
-
-.input-area {
   display: flex;
   align-items: center;
+}
+
+.loading-dots {
+  display: inline-flex;
+  margin-right: 8rpx;
+}
+
+.dot {
+  font-size: 48rpx;
+  font-weight: bold;
+  animation: bounce 1.4s infinite ease-in-out;
+}
+.dot1 { animation-delay: 0s; }
+.dot2 { animation-delay: 0.2s; }
+.dot3 { animation-delay: 0.4s; }
+
+@keyframes bounce {
+  0%, 80%, 100% { opacity: 0.3; }
+  40% { opacity: 1; }
+}
+
+.loading-text {
+  font-size: 26rpx;
+}
+
+/* Action buttons */
+.actions-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  padding: 8rpx 0;
+}
+
+.action-btn {
+  font-size: 26rpx;
+  padding: 12rpx 28rpx;
+  border-radius: 32rpx;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.action-btn-primary {
+  background-color: #FF6B35;
+  color: #fff;
+  border: none;
+}
+
+.action-btn-outline {
+  background-color: #fff;
+  color: #FF6B35;
+  border: 2rpx solid #FF6B35;
+}
+
+/* Input area */
+.input-area {
+  display: flex;
+  align-items: flex-end;
   padding: 16rpx 20rpx;
   background-color: #fff;
   border-top: 1rpx solid #eee;
@@ -61,11 +120,13 @@
 
 .chat-input {
   flex: 1;
-  height: 72rpx;
-  padding: 0 24rpx;
+  min-height: 72rpx;
+  max-height: 200rpx;
+  padding: 16rpx 24rpx;
   background-color: #F5F5F5;
-  border-radius: 36rpx;
+  border-radius: 20rpx;
   font-size: 28rpx;
+  line-height: 1.5;
 }
 
 .send-btn {
@@ -78,6 +139,7 @@
   font-size: 28rpx;
   border-radius: 36rpx;
   border: none;
+  flex-shrink: 0;
 }
 
 .send-btn[disabled] {

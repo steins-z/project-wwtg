@@ -29,12 +29,41 @@ function request(path, options = {}) {
 }
 
 /**
+ * Parse SSE text response into structured data
+ */
+function parseSSE(text) {
+  const result = { reply: '', plans: [], session_id: null };
+  const lines = text.split('\n');
+  let currentEvent = '';
+
+  for (const line of lines) {
+    if (line.startsWith('event: ')) {
+      currentEvent = line.slice(7).trim();
+    } else if (line.startsWith('data: ')) {
+      try {
+        const data = JSON.parse(line.slice(6));
+        if (data.session_id) {
+          result.session_id = data.session_id;
+        }
+        if (currentEvent === 'message' && data.content) {
+          result.reply = data.content;
+        } else if (currentEvent === 'plan_card') {
+          result.plans.push(data);
+        }
+      } catch (e) {
+        // ignore parse errors
+      }
+    }
+  }
+
+  return result;
+}
+
+/**
  * 发送聊天消息
- * W1 note: SSE not supported in wx.request — falls back to regular POST with mock response
  */
 async function sendChatMessage(message) {
   if (app.globalData.mockMode) {
-    // Mock response for W1 development
     return {
       reply: '为您找到以下方案：',
       plans: [
@@ -49,6 +78,7 @@ async function sendChatMessage(message) {
           tags: ['孕妇友好', '人少', '免费', '有餐饮'],
           stops_count: 4,
           source_count: 3,
+          source_type: 'xiaohongshu',
         },
         {
           plan_id: 'mock-plan-b-001',
@@ -61,22 +91,36 @@ async function sendChatMessage(message) {
           tags: ['室内为主', '文艺', '免费'],
           stops_count: 3,
           source_count: 2,
+          source_type: 'ai_generated',
         },
       ],
     };
   }
 
-  const res = await request('/chat/message', {
-    method: 'POST',
-    data: { message, session_id: app.globalData.sessionId },
+  // Real API: POST to backend, parse SSE response
+  return new Promise((resolve, reject) => {
+    wx.request({
+      url: app.globalData.baseURL + '/chat/message',
+      method: 'POST',
+      data: { message, session_id: app.globalData.sessionId },
+      header: { 'Content-Type': 'application/json' },
+      success(res) {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          // wx.request receives SSE as plain text
+          const parsed = parseSSE(typeof res.data === 'string' ? res.data : JSON.stringify(res.data));
+          if (parsed.session_id) {
+            app.globalData.sessionId = parsed.session_id;
+          }
+          resolve(parsed);
+        } else {
+          reject(res);
+        }
+      },
+      fail(err) {
+        reject(err);
+      },
+    });
   });
-
-  // Persist session_id from backend response for conversation continuity
-  if (res && res.session_id) {
-    app.globalData.sessionId = res.session_id;
-  }
-
-  return res;
 }
 
 /**
@@ -88,10 +132,10 @@ async function getPlanDetail(planId) {
       plan_id: planId,
       title: '双塔市集赏花散步',
       stops: [
-        { name: '双塔市集', arrive_at: '10:00', stay_duration: '30-45分钟', recommendation: '老客满蛋饼 + 冰豆浆', walk_to_next: '240m, 约3分钟' },
-        { name: '定慧寺巷', arrive_at: '10:45', stay_duration: '20分钟', recommendation: '玉兰花拍照打卡', walk_to_next: '500m, 约6分钟' },
-        { name: '耦园', arrive_at: '11:15', stay_duration: '45-60分钟', recommendation: '世界文化遗产，人少清净', walk_to_next: '300m, 约4分钟' },
-        { name: '相门城墙', arrive_at: '12:15', stay_duration: '30分钟', recommendation: '城墙上散步看护城河', walk_to_next: '' },
+        { name: '双塔市集', arrive_at: '10:00', stay_duration: '30-45分钟', recommendation: '老客满蛋饼 + 冰豆浆', nav_link: 'https://uri.amap.com/marker?position=120.636,31.316&name=%E5%8F%8C%E5%A1%94%E5%B8%82%E9%9B%86', walk_to_next: '240m, 约3分钟' },
+        { name: '定慧寺巷', arrive_at: '10:45', stay_duration: '20分钟', recommendation: '玉兰花拍照打卡', nav_link: '', walk_to_next: '500m, 约6分钟' },
+        { name: '耦园', arrive_at: '11:15', stay_duration: '45-60分钟', recommendation: '世界文化遗产，人少清净', nav_link: 'https://uri.amap.com/marker?position=120.643,31.318&name=%E8%80%A6%E5%9B%AD', walk_to_next: '300m, 约4分钟' },
+        { name: '相门城墙', arrive_at: '12:15', stay_duration: '30分钟', recommendation: '城墙上散步看护城河', nav_link: '', walk_to_next: '' },
       ],
       tips: ['明天 7-15°C 多云，建议穿薄外套', '全程步行约 1.6km，平路为主'],
       sources: [

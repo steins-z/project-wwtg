@@ -3,10 +3,12 @@
 from fastapi import APIRouter
 
 from app.models.schemas import PlanDetail, PlanSelectRequest
-from app.services.plan_service import PlanService
+from app.services.chat_service import ChatService
 
 router = APIRouter()
-plan_service = PlanService()
+
+# Import the shared chat_service to access plan_service with stored plans
+from app.api.chat import chat_service
 
 
 @router.post("/select")
@@ -24,4 +26,4 @@ async def reject_plan(req: PlanSelectRequest) -> dict[str, str]:
 @router.get("/detail/{plan_id}")
 async def get_plan_detail(plan_id: str) -> PlanDetail:
     """Get full plan detail with stops, tips, sources."""
-    return plan_service.get_mock_detail(plan_id)
+    return chat_service.plan_service.get_plan_detail(plan_id)

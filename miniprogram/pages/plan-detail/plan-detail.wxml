@@ -5,17 +5,41 @@
     <text class="detail-title">{{plan.title}}</text>
   </view>
 
-  <!-- 站点列表 -->
+  <!-- 站点列表 (Timeline) -->
   <view class="stops-section">
     <text class="section-title">📍 路线</text>
-    <view wx:for="{{plan.stops}}" wx:key="name" class="stop-item">
-      <view class="stop-time">{{item.arrive_at}}</view>
-      <view class="stop-content">
-        <text class="stop-name">{{item.name}}</text>
-        <text class="stop-duration">停留 {{item.stay_duration}}</text>
-        <text class="stop-rec">{{item.recommendation}}</text>
-        <view wx:if="{{item.walk_to_next}}" class="stop-walk">
-          🚶 {{item.walk_to_next}}
+    <view class="timeline">
+      <view wx:for="{{plan.stops}}" wx:key="name" class="timeline-item">
+        <!-- Timeline dot & line -->
+        <view class="timeline-left">
+          <view class="timeline-dot"></view>
+          <view wx:if="{{index < plan.stops.length - 1}}" class="timeline-line"></view>
+        </view>
+
+        <!-- Stop content -->
+        <view class="timeline-content">
+          <view class="stop-header">
+            <text class="stop-time">{{item.arrive_at}}</text>
+            <text class="stop-name">{{item.name}}</text>
+          </view>
+          <text class="stop-duration">停留 {{item.stay_duration}}</text>
+          <text class="stop-rec">{{item.recommendation}}</text>
+
+          <!-- Nav button -->
+          <view 
+            wx:if="{{item.nav_link}}" 
+            class="nav-btn" 
+            bindtap="onNavigate"
+            data-name="{{item.name}}"
+            data-nav-link="{{item.nav_link}}"
+          >
+            <text>🧭 导航前往</text>
+          </view>
+
+          <!-- Walk to next -->
+          <view wx:if="{{item.walk_to_next}}" class="walk-info">
+            <text>🚶 {{item.walk_to_next}}</text>
+          </view>
         </view>
       </view>
     </view>
@@ -25,7 +49,8 @@
   <view class="tips-section" wx:if="{{plan.tips.length > 0}}">
     <text class="section-title">💡 贴心提示</text>
     <view wx:for="{{plan.tips}}" wx:key="*this" class="tip-item">
-      <text>{{item}}</text>
+      <text class="tip-dot">•</text>
+      <text class="tip-text">{{item}}</text>
     </view>
   </view>
 

@@ -5,6 +5,24 @@
   padding: 28rpx;
   margin: 16rpx 0;
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+  transform: translateY(40rpx);
+  opacity: 0;
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+.plan-card.animate-in {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.source-badge {
+  display: inline-block;
+  font-size: 22rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  background-color: #FFF5F0;
+  color: #FF6B35;
+  margin-bottom: 12rpx;
 }
 
 .card-header {
@@ -43,9 +61,16 @@
   margin-right: 24rpx;
 }
 
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
 .card-tags {
   display: flex;
   flex-wrap: wrap;
+  flex: 1;
 }
 
 .tag {
@@ -56,4 +81,15 @@
   border-radius: 20rpx;
   margin-right: 12rpx;
   margin-bottom: 8rpx;
+}
+
+.card-stats {
+  display: flex;
+  gap: 16rpx;
+  flex-shrink: 0;
+}
+
+.stat {
+  font-size: 22rpx;
+  color: #999;
 }

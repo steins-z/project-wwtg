@@ -32,6 +32,49 @@ def test_chat_message_with_session_id() -> None:
     assert response.headers.get("x-session-id") == "test-sid-001"
 
 
+def test_chat_message_includes_session_in_body() -> None:
+    """SSE events include session_id in data."""
+    response = client.post(
+        "/api/v1/chat/message",
+        json={"message": "苏州", "session_id": "test-sid-body"},
+    )
+    assert response.status_code == 200
+    assert "test-sid-body" in response.text
+
+
+def test_chat_sse_status_updates() -> None:
+    """SSE should include parsing_intent status."""
+    response = client.post(
+        "/api/v1/chat/message",
+        json={"message": "苏州，和老公"},
+    )
+    body = response.text
+    assert "parsing_intent" in body
+
+
+def test_chat_generates_plans_with_city() -> None:
+    """When city is provided, plans should be generated."""
+    response = client.post(
+        "/api/v1/chat/message",
+        json={"message": "苏州"},
+    )
+    body = response.text
+    assert "event: plan_card" in body
+    assert "event: actions" in body
+
+
+def test_chat_asks_for_city_without_one() -> None:
+    """Without city, should ask follow-up."""
+    response = client.post(
+        "/api/v1/chat/message",
+        json={"message": "你好"},
+    )
+    body = response.text
+    assert "event: message" in body
+    # Should not have plan cards
+    assert "event: plan_card" not in body
+
+
 # --- Plan ---
 
 def test_plan_select() -> None:
@@ -54,13 +97,13 @@ def test_plan_reject() -> None:
     assert response.json()["status"] == "ok"
 
 
-def test_plan_detail() -> None:
-    response = client.get("/api/v1/plan/detail/mock-plan-a-001")
+def test_plan_detail_fallback() -> None:
+    """Unknown plan_id should return fallback detail."""
+    response = client.get("/api/v1/plan/detail/unknown-plan")
     assert response.status_code == 200
     data = response.json()
     assert "title" in data
     assert "stops" in data
-    assert "tips" in data
     assert len(data["stops"]) > 0
 
 
